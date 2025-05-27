@@ -1,13 +1,15 @@
 #include <iostream>
+#include <tuple>
 using namespace std;
 
 //functions2
-
-
+tuple <int, int, int> hexkeRGB(hexDasarWarna){
+    
+}
 int main(){
     string dasarWarna, komplemenWarna, senadaKananWarna, senadaKiriWarna; 
     cout << "Masukkan kode hex warna dasar (contoh: #8f767d): ";
-    cin >> dasarWarna;
+    cin >> hexDasarWarna;
 
     //panggil fungsi konversi hex ke rgb
     //panggil fungsi kalkulasi rgb buat complementary color (nilai max rgb - rgb warna dasar)
