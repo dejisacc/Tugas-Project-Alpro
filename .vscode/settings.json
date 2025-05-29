@@ -1,0 +1,8 @@
+"terminal.integrated.profiles.windows": {
+    "Clean Run": {
+        "path": "cmd.exe",
+        "args": ["/c", "powershell.exe -Command \"& {$ErrorActionPreference='SilentlyContinue'; & ${fileDirname}\\${fileBasenameNoExtension}.exe | Out-Host}\""],
+        "icon": "terminal"
+    }
+},
+"terminal.integrated.defaultProfile.windows": "Clean Run"
