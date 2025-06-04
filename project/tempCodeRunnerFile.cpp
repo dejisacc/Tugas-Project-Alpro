@@ -26,9 +26,9 @@ tuple<int, int, int> rgbKomplementer (int &r, int &g, int &b){
 int rK1, gK1, bK1; //variabel untuk menyimpan rgb warna senada kanan
 tuple<int, int, int> rgbSenadaKanan (int &r, int &g, int &b){
     rK1 = (r + 30 > 255) ? 255 : r + 30;
-    gK1 = (g + 30 > 255) ? 255 : g + 30; 
-    bK1 = (b + 30 > 255) ? 255 : b + 30;
-    return {rK1, gK1, bK1};
+    /*gK1 = (g + 30 > 255) ? 255 : g + 30; 
+    bK1 = (b + 30 > 255) ? 255 : b + 30;*/
+    return {rK1, g, b};
 }
 
 //fungsi untuk mendapatkan warna senada kiri
@@ -36,9 +36,9 @@ tuple<int, int, int> rgbSenadaKanan (int &r, int &g, int &b){
 int rK2, gK2, bK2; //variabel untuk menyimpan rgb warna senada kiri
 tuple<int, int, int> rgbSenadaKiri (int &r, int &g, int &b){
     rK2 = (r - 30 < 0) ? 0 : r - 30;
-    gK2 = (g - 30 < 0) ? 0 : g - 30; 
-    bK2 = (b - 30 < 0) ? 0 : b - 30;
-    return {rK2, gK2, bK2};
+    /*gK2 = (g - 30 < 0) ? 0 : g - 30; 
+    bK2 = (b - 30 < 0) ? 0 : b - 30;*/
+    return {rK2, g, b};
 }
 
 //fungsi konversi rgb ke hex
@@ -161,11 +161,11 @@ int main(){
 
     //generate palet warna
     cout << "================= Palet Warna =================" << endl;
-    cout << "Warna paling tua senada    : " << rgbToHex(rK1, gK1, bK1) << endl;
+    cout << "Warna paling tua senada    : " << rgbToHex(rK1, g, b) << endl;
     cout << "Warna dasar                : " << hexDasarWarna << endl;
-    cout << "Warna paling muda senada   : " << rgbToHex(rK2, gK2, bK2) << endl;
+    cout << "Warna paling muda senada   : " << rgbToHex(rK2, g, b) << endl;
     cout << "Warna komplementer         : " << rgbToHex(rKom, gKom, bKom) << endl;
-    cout << "================================================\n" << endl;
+    cout << "===============================================\n" << endl;
 
     return 0;
     //ini semua kode yang sudah ada sebelumnya, tapi dikomentari. pgn nyoba dibikin fungsi-fungsi yang sudah dibuat di atas
