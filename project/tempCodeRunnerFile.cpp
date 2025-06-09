@@ -2,6 +2,7 @@
 #include <string>
 #include <tuple>
 #include <algorithm>
+#include <cmath>
 using namespace std;
 
 //fungsi hex ke rgb
@@ -14,18 +15,8 @@ tuple<int, int, int> hexToRGB(string &hexdasarWarna) {
     return {r, g, b};
 }
 
-int rKom, gKom, bKom; //variabel untuk menyimpan rgb warna komplementer
-tuple<int, int, int> rgbKomplementer (int &r, int &g, int &b){
-    rKom = 255 - r;
-    gKom = 255 - g;
-    bKom = 255 - b;
-    return {rKom, gKom, bKom};
-}
-
-
-//float h, l, s; variabel hue, lightness, saturation
-//float minRGB, maxRGB; variabel untuk menyimpan nilai rgb tertinggi dan terendah
-//float delta; variabel untuk menyimpan selisih antara nilai rgb tertinggi dan terendah
+//minRGB, maxRGB; variabel untuk menyimpan nilai rgb tertinggi dan terendah
+//delta; variabel untuk menyimpan selisih antara nilai rgb tertinggi dan terendah
 tuple<float, float, float> rgbToHSL (int &r, int &g, int &b){
     //membagi nilai rgb ke nilai normal (0.0-1.0) utk mencari hue, saturation, dan lightness
     float fr = (float)r/255.0;
@@ -44,7 +35,7 @@ tuple<float, float, float> rgbToHSL (int &r, int &g, int &b){
     //kalkulasi saturation
     if (delta == 0) {
         s = 0; //saturation tidak terdefinisi
-    } else if (l >= 0.5) {
+    } else if (l >= 0.5 && l < 1.0) {
         s = delta / (2.0 - maxRGB - minRGB);
     } else {
         s = delta / (maxRGB + minRGB);
@@ -54,8 +45,9 @@ tuple<float, float, float> rgbToHSL (int &r, int &g, int &b){
     if (delta == 0) {
         h = 0; //hue tidak terdefinisi
     } else if (maxRGB == fr) {
-        h = (fg < fb ? 6 : 0) + (fg - fb) / delta; //0 adalah hue section untuk merah, mod 1 untuk memastikan nilai tetap dalam rentang 0-1
-    } else if (maxRGB == g) {
+        h = (fg - fb) / delta; //0 adalah hue section untuk merah, mod 1 untuk memastikan nilai tetap dalam rentang 0-1
+        if (h < 0) h += 6; // Handle negative values
+    } else if (maxRGB == fg) {
         h = 2 + (fb - fr) / delta; //2 adalah hue section untuk hijau
     } else {
         h = 4 + (fr - fg) / delta; //4 adalah hue section untuk biru
@@ -71,15 +63,15 @@ tuple<int, int, int> hueToRGB (float h, float s, float l){
     if (s == 0) {
         r = g = b = l; //warna abu-abu
     } else {
-        float q = (l < 0.5) ? l * (1 + s) : l + s - l * s;
-        float p = 2 * l - q;
-        float t[3] = {h + 1.0/3.0, h, h - 1.0/3.0}; //t adalah array untuk menyimpan nilai hue r, g, b
+        float q = (l < 0.5) ? l * (1 + s) : l + s - l * s; //menghitung nilai intensitas warna maximum yg mungkin/pigmentasi
+        float p = 2 * l - q; //menghitung nilai intensitas warna minimum yg mungkin atau grayness/blackness 
+        float t[3] = {h + 1.0f/3.0f, h, h - 1.0f/3.0f}; //t adalah array untuk menyimpan nilai hue r, g, b
 
         for (int i = 0; i < 3; i++) {
             if (t[i] < 0) t[i] += 1;
             if (t[i] > 1) t[i] -= 1;
 
-            if (t[i] < 1.0/6) {
+            if (t[i] < 1.0/6.0) {
                 t[i] = p + (q - p) * 6.0 * t[i];
             } else if (t[i] < 1.0/2.0) {
                 t[i] = q;
@@ -93,48 +85,47 @@ tuple<int, int, int> hueToRGB (float h, float s, float l){
         g = t[1];
         b = t[2];
     }
-    int rint = static_cast<int>(r * 255); //mengkonversi nilai r ke rentang 0-255
-    int gint = static_cast<int>(g * 255); //mengkonversi nilai g ke rentang 0-255
-    int bint = static_cast<int>(b * 255); //mengkonversi nilai b ke rentang 0-255
+    int rint = static_cast<int>(round(r * 255)); //mengkonversi nilai r ke rentang 0-255
+    int gint = static_cast<int>(round(g * 255)); //mengkonversi nilai g ke rentang 0-255
+    int bint = static_cast<int>(round(b * 255)); //mengkonversi nilai b ke rentang 0-255
     return {rint, gint, bint}; //mengembalikan nilai rgb dalam rentang 0-255
 }
 
-
-//fungsi untuk mendapatkan warna senada kanan
-//warna senada kanan adalah warna yang paling tua dari warna dasar
-//int rK1, gK1, bK1; variabel untuk menyimpan rgb warna senada kanan
-//float h1; variabel untuk menyimpan nilai hue senada kanan
+//h1; variabel untuk menyimpan nilai hue yg dimodifikasi 30 derajat
 tuple<float, float, float> rgbSenada (float &h, float s, float l, bool kanan) {
-    //mengurangi hue dengan 30 derajat (1/12 dari lingkaran penuh 360 derajat)
-    float h1;
-    if (kanan){
-        h1 = h + 1.0/12.0;
-        if (h1 >= 1.0) h1 = h - 1.0; //memastikan nilai hue tetap dalam rentang 0-1
-    }else{
-        h1 = h - 1.0/12.0;
-        if (h1 < 0) h1 = h + 1.0; //memastikan nilai hue tetap dalam rentang 0-1
+    //mengurangi hue n derajat dari lingkaran penuh 360 derajat sesuai tingkat saturasi warna 
+    float hueShift;
+    if (s < 0.3) {
+        hueShift = 1.0/6.0; // 60 degrees for very muted colors
+    } else if (s < 0.5) {
+        hueShift = 1.0/8.0; // 45 degrees for moderately muted colors  
+    } else {
+        hueShift = 1.0/12.0; // 30 degrees for saturated colors
     }
     
-    return {h1, s, l};
-    /*rK1 = (r + 30 > 255) ? 255 : r + 30;
-    gK1 = (g + 30 > 255) ? 255 : g + 30; 
-    bK1 = (b + 30 > 255) ? 255 : b + 30;
-    return {rK1, g, b};*/
+    float h1;
+    if (kanan){
+        h1 = h + hueShift;
+        if (h1 >= 1.0) h1 -= 1.0; //memastikan nilai hue tetap dalam rentang 0-1
+    }else{
+        h1 = h - hueShift;
+        if (h1 < 0) h1 += 1.0; //memastikan nilai hue tetap dalam rentang 0-1
+    }
+
+    float low_s = s; //utk warna saturation rendah
+    if (s < 0.3) {
+        low_s = min(1.0f, s + 0.2f);
+    }
+    
+    return {h1, low_s, l};
 }
 
-//fungsi untuk mendapatkan warna senada kiri
-//warna senada kiri adalah warna paling muda dari warna dasar
-//int rK2, gK2, bK2; variabel untuk menyimpan rgb warna senada kiri
-//float h2; variabel untuk menyimpan nilai hue senada kiri
-/*tuple<int, int, int> rgbSenadaKiri (int &r, int &g, int &b){
-    float h2 = (h - 1/12 + 1) % 1; //menambah hue dengan 30 derajat (1/12 dari lingkaran penuh 360 derajat)
-    return {h2, s, l};
-    /*rK2 = (r - 30 < 0) ? 0 : r - 30;
-    gK2 = (g - 30 < 0) ? 0 : g - 30; 
-    bK2 = (b - 30 < 0) ? 0 : b - 30;
-    return {rK2, g, b};
-} */
-
+//fungsi untuk menghitung kode warna komplementer
+tuple<float, float, float> rgbKomplementer (float h, float s, float l){
+    float hKom = h + 0.5; //menambahkan 180 derajat (0.5 dari lingkaran penuh) untuk mendapatkan warna komplementer
+    if (hKom >= 1.0) hKom -= 1.0; //memastikan nilai hue tetap dalam rentang 0-1
+    return {hKom, s, l};
+}
 
 //fungsi konversi rgb ke hex
 string rgbToHex(int &r, int &g, int &b) {
@@ -244,100 +235,73 @@ int main(){
     string hexDasarWarna, komplemenWarna, senadaKananWarna, senadaKiriWarna; 
     cout << "\nMasukkan kode hex warna dasar (contoh: #8F767D): ";
     cin >> hexDasarWarna;
-
+    
+//warna senada kanan
     //panggil fungsi konversi kode hex dari dasar warna ke rgb
     tie(r, g, b) = hexToRGB(hexDasarWarna);
-    cout << r << " " << g << " " << b << endl; //tampilkan nilai rgb dari warna dasar
+    //cout << r << " " << g << " " << b << endl; //tampilkan nilai rgb dari warna dasar utk periksa
 
     //panggil fungsi konversi rgb ke hsl
     float h, s, l;
     tie(h, s, l) = rgbToHSL(r, g, b);
-    cout << h << " " << s << " " << l << endl;
+    //cout << h << " " << s << " " << l << endl;
+
     //masukkan nilai h, s, l ke dalam fungsi rgbSenada
-    
-    float h1, h2;
-    tie(h1, s, l) = rgbSenada(h, s, l, true); //true untuk kanan
-    cout << h1 << " " << s << " " << l << endl;    
+    float h1;
+    tie(h1, s, l) = rgbSenada(h, s, l, true); //true untuk kanan (+30 derajat)
+    //cout << h1 << " " << s << " " << l << endl;    
     int rint, gint, bint; //variabel untuk menyimpan rgb warna senada kanan
     tie(rint, gint, bint) = hueToRGB(h1, s, l); //konversi hsl ke rgb untuk warna senada kanan
-    cout << h1 << " " << s << " " << l << endl;
-    cout << rint << " " << gint << " " << bint << endl;
+    //cout << h1 << " " << s << " " << l << endl; ini buat periksa nilainya berubah ap gk
+    //cout << rint << " " << gint << " " << bint << endl; ini juga buat periksa doang
     senadaKananWarna = rgbToHex(rint, gint, bint); //konversi rgb ke hex untuk warna senada kanan
 
-
-    //panggil fungsi konversi hex ke rgb utk reset
+//warna senada kiri
+    //panggil fungsi konversi hex ke rgb utk reset rgb balik lagi ke rgb warna dasar
     tie(r, g, b) = hexToRGB(hexDasarWarna);
-    cout << r << " " << g << " " << b << endl; //tampilkan nilai rgb dari warna dasar
-    //panggil fungsi konversi rgb ke hsl utk reset
+    //cout << r << " " << g << " " << b << endl; //tampilkan nilai rgb dari warna dasar utk periksa
+    
+    //panggil fungsi konversi rgb yg direset td ke hsl
     tie(h, s, l) = rgbToHSL(r, g, b);
-    cout << r << " " << g << " " << b << endl; //tampilkan nilai rgb dari warna dasar
-    cout << h << " " << s << " " << l << endl;
+    //cout << r << " " << g << " " << b << endl; ini utk periksa
+    //cout << h << " " << s << " " << l << endl; ini utk periksa nilainy brubah ap gk
+    
     //masukkan nilai h, s, l ke dalam fungsi rgbSenada
     tie(h1, s, l) = rgbSenada(h, s, l, false); //false untuk kiri   
-    cout << h1 << " " << s << " " << l << endl;
+    //cout << h1 << " " << s << " " << l << endl; ini utk periksa
     tie(rint, gint, bint) = hueToRGB(h1, s, l);
-    cout << h1 << " " << s << " " << l << endl;
-    cout << rint << " " << bint << " " << gint << endl;
+    //cout << h1 << " " << s << " " << l << endl; ini utk periksa
+    //cout << rint << " " << bint << " " << gint << endl; ini utk periksa
     senadaKiriWarna = rgbToHex(rint, gint, bint);
 
-
+//warna komplemen
+    //panggil fungsi konversi hex ke rgb utk reset value ke rgb warna dasar
     tie(r, g, b) = hexToRGB(hexDasarWarna);
 
-    //pisahian kode-kode hex menjadi r, g, b
-    /*tie(rK1, gK1, bK1) = rgbSenadaKanan(r, g, b);
-    tie(rK2, gK2, bK2) = rgbSenadaKiri(r, g, b);*/
-    tie(rKom, gKom, bKom) = rgbKomplementer(r, g, b);
-    komplemenWarna = rgbToHex(rKom, gKom, bKom); //konversi rgb ke hex untuk warna komplementer
+    //panggil fungsi konversi rgb yg direset td ke hsl
+    tie(h, s, l) = rgbToHSL(r, g, b);
 
-    //generate palet warna
-    cout << "================= Palet Warna =================" << endl;
+    //panggil fungsi utk menghitung kode warna komplemen
+    float hKom;
+    tie(hKom, s, l) = rgbKomplementer(h, s, l);
+    
+    //panggil fungsi utk konversi hsl ke rgb
+    tie(rint, gint, bint) = hueToRGB(hKom, s, l);
+
+    //panggil fungsi konversi rgb ke hex
+    komplemenWarna = rgbToHex(rint, gint, bint); //konversi rgb ke hex untuk warna komplementer
+
+//generate palet warna
+    cout << "========================================== Palet Warna ==========================================" << endl;
     cout << "Warna senada kanan         : " << senadaKananWarna << endl;
     cout << "Warna dasar                : " << hexDasarWarna << endl;
     cout << "Warna senada kiri          : " << senadaKiriWarna << endl;
-    cout << "Warna komplementer         : " << komplemenWarna<< endl;
-    cout << "===============================================\n" << endl;
+    if (hexDasarWarna != komplemenWarna){
+        cout << "Warna komplementer         : " << komplemenWarna << endl;
+    } else {
+        cout << "Warna komplementer         : tidak ada, karena warna dasar merupakan warna monochomatic" << endl;
+    }
+    cout << "=================================================================================================\n" << endl;
 
     return 0;
-    //ini semua kode yang sudah ada sebelumnya, tapi dikomentari. pgn nyoba dibikin fungsi-fungsi yang sudah dibuat di atas
-    //panggil fungsi konversi hex ke rgb
-    /*tie(r, g, b) = hexToRGB(hexDasarWarna);
-    cout << "RGB dari warna dasar           : (" << r << ", " << g << ", " << b << ")" << endl; 
-    cout << "Hex dari warna dasar           : " << hexDasarWarna << endl;
-    */
-
-
-    //rgb buat complementary color (nilai max rgb - rgb warna dasar)
-    /*
-    int rKom = 255 - r;
-    int gKom = 255 - g;
-    int bKom = 255 - b;
-    cout << "RGB dari warna komplementer    : (" << rKom << ", " << gKom << ", " << bKom << ")" << endl;
-    //konversi rgb ke hex
-    string hexKomplemenWarna = rgbToHex(rKom, gKom, bKom);
-    cout << "Hex dari warna komplementer    : " << hexKomplemenWarna << endl;
-    */
-
-
-    //rgb buat analogous color ke kanan & kiri (nilai rgb warna dasar +- 30)
-    //kanan
-    /*int rK1 = (r + 30 > 255) ? 255 : r + 30;
-    int gK1 = (g + 30 > 255) ? 255 : g + 30; 
-    int bK1 = (b + 30 > 255) ? 255 : b + 30;
-    cout << "RGB dari warna senada kanan    : (" << rK1 << ", " << gK1 << ", " << bK1 << ")" << endl;
-    //konversi rgb ke hex
-    string hexSenadaKananWarna = rgbToHex(rK1, gK1, bK1);
-    cout << "Hex dari warna senada kanan    : " << hexSenadaKananWarna << endl;
-    */
-
-    //kiri
-    /*
-    int rK2 = (r - 30 < 0) ? 0 : r - 30;
-    int gK2 = (g - 30 < 0) ? 0 : g - 30; 
-    int bK2 = (b - 30 < 0) ? 0 : b - 30;
-    cout << "RGB dari warna senada kiri     : (" << rK2 << ", " << gK2 << ", " << bK2 << ")" << endl;
-    //konversi rgb ke hex
-    string hexSenadaKiriWarna = rgbToHex(rK2, gK2, bK2);
-    cout << "Hex dari warna senada kiri     : " << hexSenadaKiriWarna << endl;
-    */
-
 }
