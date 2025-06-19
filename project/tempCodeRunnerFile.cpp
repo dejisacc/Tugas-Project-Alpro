@@ -16,7 +16,7 @@ tuple<int, int, int> hexToRGB(string &hexdasarWarna) {
 }
 
 //minRGB, maxRGB; variabel untuk menyimpan nilai rgb tertinggi dan terendah
-//delta; variabel untuk menyimpan selisih antara nilai rgb tertinggi dan terendah
+//delta (chroma); variabel untuk menyimpan selisih antara nilai rgb tertinggi dan terendah
 tuple<float, float, float> rgbToHSL (int &r, int &g, int &b){
     //membagi nilai rgb ke nilai normal (0.0-1.0) utk mencari hue, saturation, dan lightness
     float fr = (float)r/255.0;
@@ -35,10 +35,10 @@ tuple<float, float, float> rgbToHSL (int &r, int &g, int &b){
     //kalkulasi saturation
     if (delta == 0) {
         s = 0; //saturation tidak terdefinisi
-    } else if (l >= 0.5 && l < 1.0) {
-        s = delta / (2.0 - maxRGB - minRGB);
-    } else {
+    } else if (l < 0.5) {
         s = delta / (maxRGB + minRGB);
+    } else {
+        s = delta / (2.0 - maxRGB - minRGB);
     }
 
     //kalkulasi hue
@@ -67,16 +67,17 @@ tuple<int, int, int> hueToRGB (float h, float s, float l){
         float p = 2 * l - q; //menghitung nilai intensitas warna minimum yg mungkin atau grayness/blackness 
         float t[3] = {h + 1.0f/3.0f, h, h - 1.0f/3.0f}; //t adalah array untuk menyimpan nilai hue r, g, b
 
+
         for (int i = 0; i < 3; i++) {
             if (t[i] < 0) t[i] += 1;
             if (t[i] > 1) t[i] -= 1;
 
             if (t[i] < 1.0/6.0) {
-                t[i] = p + (q - p) * 6.0 * t[i];
+                t[i] = p + (q - p) * 6.0 * t[i]; //warna di antara merah dan hijau
             } else if (t[i] < 1.0/2.0) {
-                t[i] = q;
+                t[i] = q; // warna di antara merah dan hijau
             } else if (t[i] < 2.0/3.0) {
-                t[i] = p + (q - p) * (2.0/3.0 - t[i]) * 6.0;
+                t[i] = p + (q - p) * (2.0/3.0 - t[i]) * 6.0; //untuk warna di antara hijau dan biru
             } else {
                 t[i] = p;
             }
@@ -95,12 +96,12 @@ tuple<int, int, int> hueToRGB (float h, float s, float l){
 tuple<float, float, float> rgbSenada (float &h, float s, float l, bool kanan) {
     //mengurangi hue n derajat dari lingkaran penuh 360 derajat sesuai tingkat saturasi warna 
     float hueShift;
-    if (s < 0.3) {
-        hueShift = 1.0/6.0; // 60 degrees for very muted colors
-    } else if (s < 0.5) {
-        hueShift = 1.0/8.0; // 45 degrees for moderately muted colors  
+    if (s < 0.3 && l >= 0.8 || l >= 0.8 || s < 0.3) { 
+        hueShift = 1.0/4.5; // 80 degrees for very light/muted colors
+    } else if (s < 0.5 && l >= 0.5 || l >= 0.5 || s < 0.5) {
+        hueShift = 1.0/6.5; // 55 degrees for moderately muted colors  
     } else {
-        hueShift = 1.0/12.0; // 30 degrees for saturated colors
+        hueShift = 1.0/10.3; // 35 degrees for saturated colors
     }
     
     float h1;
@@ -112,12 +113,7 @@ tuple<float, float, float> rgbSenada (float &h, float s, float l, bool kanan) {
         if (h1 < 0) h1 += 1.0; //memastikan nilai hue tetap dalam rentang 0-1
     }
 
-    float low_s = s; //utk warna saturation rendah
-    if (s < 0.3) {
-        low_s = min(1.0f, s + 0.2f);
-    }
-    
-    return {h1, low_s, l};
+    return {h1, s, l};
 }
 
 //fungsi untuk menghitung kode warna komplementer
@@ -130,102 +126,101 @@ tuple<float, float, float> rgbKomplementer (float h, float s, float l){
 //fungsi konversi rgb ke hex
 string rgbToHex(int &r, int &g, int &b) {
     string hexWarna = "#";
-    hexWarna.substr(1, 2) = (r/16) + (r%16);
         if (r/16 < 10) {
             hexWarna += to_string(r/16);
         } else if (r/16 == 10) {
-            hexWarna += char('A');
+            hexWarna += 'A';
         } else if (r/16 == 11) {
-            hexWarna += char('B');
+            hexWarna += 'B';
         } else if (r/16 == 12) {
-            hexWarna += char('C');
+            hexWarna += 'C';
         } else if (r/16 == 13) {
-            hexWarna += char('D');
+            hexWarna += 'D';
         } else if (r/16 == 14) {
-            hexWarna += char('E');
+            hexWarna += 'E';
         } else if (r/16 == 15) {
-            hexWarna += char('F');
+            hexWarna += 'F';
         }
 
         if (r%16 < 10) {
             hexWarna += to_string(r%16);
         } else if (r%16 == 10) {
-            hexWarna += char('A');
+            hexWarna += 'A';
         } else if (r%16 == 11) {
-            hexWarna += char('B');
+            hexWarna += 'B';
         } else if (r%16 == 12) {
-            hexWarna += char('C');
+            hexWarna += 'C';
         } else if (r%16 == 13) {
-            hexWarna += char('D');
+            hexWarna += 'D';
         } else if (r%16 == 14) {
-            hexWarna += char('E');
+            hexWarna += 'E';
         } else if (r%16 == 15) {
-            hexWarna += char('F');
+            hexWarna += 'F';
         }
-    hexWarna.substr(3, 2) = (g/16) + (g%16);
+    
         if (g/16 < 10) {
             hexWarna += to_string(g/16);
         } else if (g/16 == 10) {
-            hexWarna += char('A');
+            hexWarna += 'A';
         } else if (g/16 == 11) {
-            hexWarna += char('B');
+            hexWarna += 'B';
         } else if (g/16 == 12) {
-            hexWarna += char('C');
+            hexWarna += 'C';
         } else if (g/16 == 13) {
-            hexWarna += char('D');
+            hexWarna += 'D';
         } else if (g/16 == 14) {
-            hexWarna += char('E');
+            hexWarna += 'E';
         } else if (g/16 == 15) {
-            hexWarna += char('F');
+            hexWarna += 'F';
         }
 
         if (g%16 < 10) {
             hexWarna += to_string(g%16);
         } else if (g%16 == 10) {
-            hexWarna += char('A');
+            hexWarna += 'A';
         } else if (g%16 == 11) {
-            hexWarna += char('B');
+            hexWarna += 'B';
         } else if (g%16 == 12) {
-            hexWarna += char('C');
+            hexWarna += 'C';
         } else if (g%16 == 13) {
-            hexWarna += char('D');
+            hexWarna += 'D';
         } else if (g%16 == 14) {
-            hexWarna += char('E');
+            hexWarna += 'E';
         } else if (g%16 == 15) {
-            hexWarna += char('F');
+            hexWarna += 'F';
         }
     
-    hexWarna.substr(5, 2) = (b/16) + (b%16);
+    
         if (b/16 < 10) {
             hexWarna += to_string(b/16);
         } else if (b/16 == 10) {
-            hexWarna += char('A');
+            hexWarna += 'A';
         } else if (b/16 == 11) {
-            hexWarna += char('B');
+            hexWarna += 'B';
         } else if (b/16 == 12) {
-            hexWarna += char('C');
+            hexWarna += 'C';
         } else if (b/16 == 13) {
-            hexWarna += char('D');
+            hexWarna += 'D';
         } else if (b/16 == 14) {
-            hexWarna += char('E');
+            hexWarna += 'E';
         } else if (b/16 == 15) {
-            hexWarna += char('F');
+            hexWarna += 'F';
         }
 
         if (b%16 < 10) {
             hexWarna += to_string(b%16);
         } else if (b%16 == 10) {
-            hexWarna += char('A');
+            hexWarna += 'A';
         } else if (b%16 == 11) {
-            hexWarna += char('B');
+            hexWarna += 'B';
         } else if (b%16 == 12) {
-            hexWarna += char('C');
+            hexWarna += 'C';
         } else if (b%16 == 13) {
-            hexWarna += char('D');
+            hexWarna += 'D';
         } else if (b%16 == 14) {
-            hexWarna += char('E');
+            hexWarna += 'E';
         } else if (b%16 == 15) {
-            hexWarna += char('F');
+            hexWarna += 'F';
         }
     return hexWarna;
 }
@@ -233,7 +228,7 @@ string rgbToHex(int &r, int &g, int &b) {
 
 int main(){
     string hexDasarWarna, komplemenWarna, senadaKananWarna, senadaKiriWarna; 
-    cout << "\nMasukkan kode hex warna dasar (contoh: #8F767D): ";
+    cout << "\nMasukkan kode hex warna dasar (contoh: #FF0000): ";
     cin >> hexDasarWarna;
     
 //warna senada kanan
@@ -293,9 +288,9 @@ int main(){
 
 //generate palet warna
     cout << "========================================== Palet Warna ==========================================" << endl;
-    cout << "Warna senada kanan         : " << senadaKananWarna << endl;
+    cout << "Warna senada hue++         : " << senadaKananWarna << endl;
     cout << "Warna dasar                : " << hexDasarWarna << endl;
-    cout << "Warna senada kiri          : " << senadaKiriWarna << endl;
+    cout << "Warna senada hue--         : " << senadaKiriWarna << endl;
     if (hexDasarWarna != komplemenWarna){
         cout << "Warna komplementer         : " << komplemenWarna << endl;
     } else {

@@ -18,7 +18,7 @@ tuple<int, int, int> hexToRGB(string &hexdasarWarna) {
 //minRGB, maxRGB; variabel untuk menyimpan nilai rgb tertinggi dan terendah
 //delta (chroma); variabel untuk menyimpan selisih antara nilai rgb tertinggi dan terendah
 tuple<float, float, float> rgbToHSL (int &r, int &g, int &b){
-    //membagi nilai rgb agar range nilainya (0.0-1.0) utk mencari hue, saturation, dan lightness
+    //membagi nilai rgb ke nilai normal (0.0-1.0) utk mencari hue, saturation, dan lightness
     float fr = (float)r/255.0;
     float fg = (float)g/255.0;
     float fb = (float)b/255.0;
@@ -67,17 +67,16 @@ tuple<int, int, int> hueToRGB (float h, float s, float l){
         float p = 2 * l - q; //menghitung nilai intensitas warna minimum yg mungkin atau grayness/blackness 
         float t[3] = {h + 1.0f/3.0f, h, h - 1.0f/3.0f}; //t adalah array untuk menyimpan nilai hue r, g, b
 
-
         for (int i = 0; i < 3; i++) {
             if (t[i] < 0) t[i] += 1;
             if (t[i] > 1) t[i] -= 1;
 
             if (t[i] < 1.0/6.0) {
-                t[i] = p + (q - p) * 6.0 * t[i]; //warna di antara merah dan hijau
+                t[i] = p + (q - p) * 6.0 * t[i];
             } else if (t[i] < 1.0/2.0) {
-                t[i] = q; // warna di antara merah dan hijau
+                t[i] = q;
             } else if (t[i] < 2.0/3.0) {
-                t[i] = p + (q - p) * (2.0/3.0 - t[i]) * 6.0; //untuk warna di antara hijau dan biru
+                t[i] = p + (q - p) * (2.0/3.0 - t[i]) * 6.0;
             } else {
                 t[i] = p;
             }
